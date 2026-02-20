@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">TakeSS</string>
+    <string name="tile_label">Screenshot</string>
+    <string name="app_description">Take screenshots from your Quick Settings tile or notification panel</string>
+
+    <string name="how_to_use_title">📱 How to Use</string>
+    <string name="how_to_use_body">1. Tap \"Enable Screenshot Service\" below to grant permission once.\n\n2. Swipe down from the top of your screen to open the Quick Settings panel.\n\n3. Tap the pencil/edit icon to add tiles, find \"Screenshot\" and drag it in.\n\n4. Now just tap the Screenshot tile anytime — no permission prompt needed!\n\n5. You can also tap \"Take Screenshot\" in the notification to capture instantly!</string>
+
+    <string name="service_control_title">🚀 Screenshot Service</string>
+    <string name="service_control_desc">Enable the service once to grant screen capture permission. It stays running in the background so you can take unlimited screenshots without any permission dialogs.</string>
+    <string name="enable_service">Enable Screenshot Service</string>
+    <string name="disable_service">Stop Screenshot Service</string>
+    <string name="service_running">🟢 Service is running — tap the tile or notification to capture!</string>
+    <string name="service_stopped">🔴 Service is not running — tap the button to enable</string>
+
+
+    <string name="storage_settings_title">💾 Storage Settings</string>
+    <string name="storage_internal">Internal Storage (Pictures/TakeSS)</string>
+    <string name="storage_sd_card">Custom Folder / SD Card</string>
+    <string name="choose_folder">Choose Folder</string>
+    <string name="default_path">📁 Pictures/TakeSS (Internal Storage)</string>
+
+    <string name="note_title">ℹ️ Note</string>
+    <string name="note_body">• Permission is granted once when you enable the service. After that, every tile tap or notification button tap captures instantly.\n\n• A small persistent notification keeps the service alive — required by Android. It also has a \"Take Screenshot\" button!\n\n• After capture, a preview appears for 3 seconds. Tap Save, Crop, Resize, or Scroll Capture — or let it auto-save.\n\n• Screenshots are saved as PNG files with timestamps.</string>
+
+    <!-- Preview activity -->
+    <string name="preview_content_desc">Screenshot preview</string>
+    <string name="save">Save</string>
+    <string name="discard">Discard</string>
+    <string name="scroll_capture">Scroll</string>
+    <string name="crop">Crop</string>
+
+    <!-- Crop dialog -->
+    <string name="crop_title">Crop Screenshot</string>
+    <string name="crop_top_label">Top</string>
+    <string name="crop_bottom_label">Bottom</string>
+    <string name="crop_left_label">Left</string>
+    <string name="crop_right_label">Right</string>
+
+    <!-- Resize dialog -->
+    <string name="resize">Resize</string>
+    <string name="resize_title">Resize Screenshot</string>
+    <string name="resize_width">Width (px)</string>
+    <string name="resize_height">Height (px)</string>
+    <string name="lock_aspect_ratio">Lock aspect ratio</string>
+    <string name="resize_presets">Quick presets:</string>
+
+    <!-- Accessibility service -->
+    <string name="accessibility_service_desc">TakeSS uses this service to perform auto-scroll for long screenshots.</string>
+</resources>
