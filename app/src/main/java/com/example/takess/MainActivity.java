@@ -10,7 +10,10 @@ import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -149,6 +152,48 @@ public class MainActivity extends AppCompatActivity {
 
         btnChooseFolder.setOnClickListener(v -> openFolderPicker());
 
+        // ── Preview duration EditText ──
+        EditText etDuration = findViewById(R.id.et_duration);
+
+        float savedDuration = prefs.getFloat("preview_duration_f", 3f);
+        etDuration.setText(formatDuration(savedDuration));
+
+        etDuration.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) { }
+            @Override public void onTextChanged(CharSequence s, int st, int b, int c) { }
+            @Override
+            public void afterTextChanged(Editable s) {
+                try {
+                    float val = Float.parseFloat(s.toString());
+                    if (val < 0.1f) val = 0.1f;
+                    if (val > 60f) val = 60f;
+                    prefs.edit().putFloat("preview_duration_f", val).apply();
+                } catch (NumberFormatException ignored) { }
+            }
+        });
+
+        // ── File name prefix EditText ──
+        EditText etFilePrefix = findViewById(R.id.et_file_prefix);
+        TextView tvFilenamePreview = findViewById(R.id.tv_filename_preview);
+
+        String savedPrefix = prefs.getString("file_prefix", "Screenshot");
+        etFilePrefix.setText(savedPrefix);
+        updateFilenamePreview(tvFilenamePreview, savedPrefix);
+
+        etFilePrefix.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) { }
+            @Override public void onTextChanged(CharSequence s, int st, int b, int c) { }
+            @Override
+            public void afterTextChanged(Editable s) {
+                String prefix = s.toString().trim();
+                if (prefix.isEmpty()) prefix = "Screenshot";
+                // Remove characters not safe for filenames
+                prefix = prefix.replaceAll("[^a-zA-Z0-9_\\-]", "_");
+                prefs.edit().putString("file_prefix", prefix).apply();
+                updateFilenamePreview(tvFilenamePreview, prefix);
+            }
+        });
+
         // ── Permissions ──
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -192,6 +237,21 @@ public class MainActivity extends AppCompatActivity {
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION |
                 Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         folderPickerLauncher.launch(intent);
+    }
+
+    private void updateFilenamePreview(TextView tv, String prefix) {
+        String sample = prefix + "_" +
+                new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
+                        .format(new java.util.Date()) + ".png";
+        tv.setText("Preview: " + sample);
+    }
+
+    /** Format float: show as integer if whole, otherwise 1 decimal place */
+    private String formatDuration(float val) {
+        if (val == (int) val) {
+            return String.valueOf((int) val);
+        }
+        return String.format(java.util.Locale.US, "%.1f", val);
     }
 
     private void updatePathDisplay() {

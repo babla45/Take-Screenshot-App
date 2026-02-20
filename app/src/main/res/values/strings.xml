@@ -20,6 +20,12 @@
     <string name="choose_folder">Choose Folder</string>
     <string name="default_path">📁 Pictures/TakeSS (Internal Storage)</string>
 
+    <string name="preview_duration_title">⏱️ Preview Duration</string>
+    <string name="preview_duration_desc">How long the screenshot preview stays on screen before auto-saving.</string>
+
+    <string name="file_prefix_title">📝 File Name Prefix</string>
+    <string name="file_prefix_desc">Custom prefix for screenshot file names. Example: MyScreen → MyScreen_20250220_143025.png</string>
+
     <string name="note_title">ℹ️ Note</string>
     <string name="note_body">• Permission is granted once when you enable the service. After that, every tile tap or notification button tap captures instantly.\n\n• A small persistent notification keeps the service alive — required by Android. It also has a \"Take Screenshot\" button!\n\n• After capture, a preview appears for 3 seconds. Tap Save or Crop — or let it auto-save.\n\n• Screenshots are saved as PNG files with timestamps.</string>
 

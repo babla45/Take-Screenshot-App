@@ -299,7 +299,9 @@ public class ScreenshotService extends Service {
         String storageType = prefs.getString("storage_type", "internal");
         String safUri = prefs.getString("saf_uri", null);
 
-        String fileName = "Screenshot_" +
+        String filePrefix = prefs.getString("file_prefix", "Screenshot");
+
+        String fileName = filePrefix + "_" +
                 new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) +
                 ".png";
 

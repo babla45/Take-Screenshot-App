@@ -1,12 +1,15 @@
 package com.example.takess;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.RectF;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
@@ -25,6 +28,7 @@ import java.io.File;
  *  • 3-second auto-save countdown (paused on interaction)
  *  • Inline crop by dragging edges on the screenshot thumbnail
  *  • Save / Discard
+ *  • Tap anywhere outside the card → instant save & dismiss
  */
 public class ScreenshotPreviewActivity extends AppCompatActivity {
 
@@ -35,6 +39,7 @@ public class ScreenshotPreviewActivity extends AppCompatActivity {
     private TextView tvCountdown;
     private TextView tvCropInfo;
     private MaterialButton btnCrop;
+    private View cardPreview;
 
     private String imagePath;
     private Bitmap currentBitmap;
@@ -42,17 +47,25 @@ public class ScreenshotPreviewActivity extends AppCompatActivity {
     private boolean userInteracted = false;
     private boolean inCropMode = false;
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_screenshot_preview);
 
-        // Tapping outside the card dismisses (auto-save)
-        findViewById(R.id.preview_root).setOnClickListener(v -> {
-            if (!inCropMode) {
-                cancelTimer();
-                saveAndFinish();
+        cardPreview = findViewById(R.id.card_preview);
+
+        // Tapping anywhere outside the card → instant save & dismiss
+        findViewById(R.id.preview_root).setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                // Check if touch is outside the card
+                if (!isTouchInsideView(cardPreview, event)) {
+                    cancelTimer();
+                    saveAndFinish();
+                    return true;
+                }
             }
+            return false;
         });
 
         ivPreview = findViewById(R.id.iv_preview);
@@ -212,13 +225,24 @@ public class ScreenshotPreviewActivity extends AppCompatActivity {
     // ──────────────────────────────────────────────
 
     private void startAutoSaveTimer() {
-        autoSaveTimer = new CountDownTimer(3000, 1000) {
-            int secondsLeft = 3;
+        SharedPreferences prefs = getSharedPreferences("takess_prefs", MODE_PRIVATE);
+        float durationSeconds = prefs.getFloat("preview_duration_f", 3f);
+        long durationMs = (long) (durationSeconds * 1000f);
 
+        // Tick every 100ms for sub-second durations, else every 1s
+        long tickInterval = durationSeconds < 1f ? 100 : 1000;
+
+        autoSaveTimer = new CountDownTimer(durationMs, tickInterval) {
             @Override
             public void onTick(long millisUntilFinished) {
-                secondsLeft = (int) Math.ceil(millisUntilFinished / 1000.0);
-                tvCountdown.setText("Auto-saving in " + secondsLeft + "s…");
+                float secsLeft = millisUntilFinished / 1000f;
+                if (secsLeft < 1f) {
+                    tvCountdown.setText(String.format(java.util.Locale.US,
+                            "Auto-saving in %.1fs…", secsLeft));
+                } else {
+                    tvCountdown.setText("Auto-saving in " +
+                            (int) Math.ceil(secsLeft) + "s…");
+                }
             }
 
             @Override
@@ -280,6 +304,21 @@ public class ScreenshotPreviewActivity extends AppCompatActivity {
         } catch (Exception ignored) { }
         Toast.makeText(this, "Screenshot discarded", Toast.LENGTH_SHORT).show();
         finish();
+    }
+
+    // ──────────────────────────────────────────────
+    //  Touch-outside detection
+    // ──────────────────────────────────────────────
+
+    private boolean isTouchInsideView(View view, MotionEvent event) {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        float x = event.getRawX();
+        float y = event.getRawY();
+        return x >= location[0]
+                && x <= location[0] + view.getWidth()
+                && y >= location[1]
+                && y <= location[1] + view.getHeight();
     }
 
     @Override
