@@ -65,6 +65,7 @@ public class ScreenshotService extends Service {
     private MediaProjection mediaProjection;
     private boolean isProjectionReady = false;
     private static boolean isRunning = false;
+    private Toast currentToast;
 
     public static boolean isServiceRunning() {
         return isRunning;
@@ -85,7 +86,14 @@ public class ScreenshotService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         startForegroundWithNotification();
 
-        if (intent == null) return START_STICKY;
+        if (intent == null) {
+            // Service restarted by system after force-stop — no projection data available
+            // Stop ourselves since we can't do anything without MediaProjection
+            cleanup();
+            stopForeground(true);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
         String action = intent.getAction();
         if (action == null) action = ACTION_INIT;
@@ -112,7 +120,7 @@ public class ScreenshotService extends Service {
                 break;
         }
 
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     // ──────────────────────────────────────────────
@@ -148,6 +156,11 @@ public class ScreenshotService extends Service {
         isProjectionReady = true;
         showToast("TakeSS ready! Use the tile or notification button to capture.");
         startForegroundWithNotification();
+
+        // If launched from the tile after force-stop, capture immediately
+        if (intent.getBooleanExtra("captureAfterInit", false)) {
+            new Handler(Looper.getMainLooper()).postDelayed(this::handleCapture, 400);
+        }
     }
 
     // ──────────────────────────────────────────────
@@ -158,6 +171,12 @@ public class ScreenshotService extends Service {
         if (!isProjectionReady || mediaProjection == null) {
             showToast("Permission expired. Please re-enable from the app.");
             return;
+        }
+
+        // Cancel any visible toast so it doesn't appear in the screenshot
+        if (currentToast != null) {
+            currentToast.cancel();
+            currentToast = null;
         }
 
         captureFrame(bitmap -> {
@@ -212,6 +231,8 @@ public class ScreenshotService extends Service {
         int density = metrics.densityDpi;
 
         ImageReader reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
+        Handler handler = new Handler(Looper.getMainLooper());
+        final boolean[] captured = {false};
 
         VirtualDisplay vd = mediaProjection.createVirtualDisplay(
                 "ScreenCapture",
@@ -220,11 +241,15 @@ public class ScreenshotService extends Service {
                 reader.getSurface(),
                 null, null);
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        // Event-driven: fires as soon as the first frame is rendered (~50-150ms)
+        reader.setOnImageAvailableListener(r -> {
+            if (captured[0]) return;
+            captured[0] = true;
+
             Image image = null;
             Bitmap bitmap = null;
             try {
-                image = reader.acquireLatestImage();
+                image = r.acquireLatestImage();
                 if (image != null) {
                     bitmap = imageToBitmap(image, width, height);
                     image.close();
@@ -237,7 +262,17 @@ public class ScreenshotService extends Service {
                 reader.close();
             }
             callback.onCaptured(bitmap);
-        }, 600);
+        }, handler);
+
+        // Safety timeout: if no frame arrives within 1s, fail gracefully
+        handler.postDelayed(() -> {
+            if (!captured[0]) {
+                captured[0] = true;
+                try { vd.release(); } catch (Exception ignored) {}
+                try { reader.close(); } catch (Exception ignored) {}
+                callback.onCaptured(null);
+            }
+        }, 1000);
     }
 
     private Bitmap imageToBitmap(Image image, int width, int height) {
@@ -269,13 +304,14 @@ public class ScreenshotService extends Service {
             File tempDir = new File(getCacheDir(), "screenshots");
             if (!tempDir.exists()) //noinspection ResultOfMethodCallIgnored
                 tempDir.mkdirs();
-            String fileName = "temp_ss_" + System.currentTimeMillis() + ".png";
+            String fileName = "temp_ss_" + System.currentTimeMillis() + ".jpg";
             File tempFile = new File(tempDir, fileName);
 
             FileOutputStream fos = new FileOutputStream(tempFile);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            fos.flush();
-            fos.close();
+            java.io.BufferedOutputStream bos = new java.io.BufferedOutputStream(fos, 8192);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, bos);
+            bos.flush();
+            bos.close();
             return tempFile.getAbsolutePath();
         } catch (IOException e) {
             Log.e(TAG, "saveBitmapToTemp error", e);
@@ -401,11 +437,11 @@ public class ScreenshotService extends Service {
         PendingIntent stopPending = PendingIntent.getService(this, 0, stopIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // "Take Screenshot" action — goes through activity to collapse shade first
+        // "Take Screenshot" action — must go through an Activity so the notification shade collapses
         Intent captureActivityIntent = new Intent(this, ScreenshotRequestActivity.class);
         captureActivityIntent.putExtra("justCollapse", true);
         captureActivityIntent.putExtra("captureAfter", true);
-        captureActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        captureActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent capturePending = PendingIntent.getActivity(this, 2, captureActivityIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
@@ -440,8 +476,13 @@ public class ScreenshotService extends Service {
     // ──────────────────────────────────────────────
 
     private void showToast(String message) {
-        new Handler(Looper.getMainLooper()).post(() ->
-                Toast.makeText(ScreenshotService.this, message, Toast.LENGTH_SHORT).show());
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (currentToast != null) {
+                currentToast.cancel();
+            }
+            currentToast = Toast.makeText(ScreenshotService.this, message, Toast.LENGTH_SHORT);
+            currentToast.show();
+        });
     }
 
     private void cleanup() {

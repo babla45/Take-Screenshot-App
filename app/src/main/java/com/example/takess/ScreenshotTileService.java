@@ -27,18 +27,44 @@ public class ScreenshotTileService extends TileService {
         super.onClick();
 
         if (ScreenshotService.isServiceRunning()) {
-            // Collapse the shade first, then capture after a short delay
-            // so the notification panel isn't in the screenshot
-            Intent collapseIntent = new Intent(this, ScreenshotRequestActivity.class);
-            collapseIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            collapseIntent.putExtra("justCollapse", true);
-            collapseIntent.putExtra("captureAfter", true);
-            collapseAndStart(collapseIntent, 1);
+            // Service is running — send capture directly, skip the Activity middleman
+            // startActivityAndCollapse() handles collapsing the shade for us
+            Intent captureIntent = new Intent(this, ScreenshotService.class);
+            captureIntent.setAction(ScreenshotService.ACTION_CAPTURE);
+            captureIntent.putExtra("delayMs", 300L); // wait for shade to collapse
+            startService(captureIntent);
+            // Still need to collapse the shade
+            collapsePanel();
         } else {
             // First time or service was killed → need consent
             Intent intent = new Intent(this, ScreenshotRequestActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            intent.putExtra("fromTile", true);
             collapseAndStart(intent, 0);
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private void collapsePanel() {
+        try {
+            // Use a no-op activity just to trigger shade collapse
+            Intent collapseIntent = new Intent(this, ScreenshotRequestActivity.class);
+            collapseIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            collapseIntent.putExtra("justCollapse", true);
+            collapseIntent.putExtra("captureAfter", false); // capture already sent above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                PendingIntent pi = PendingIntent.getActivity(this, 3, collapseIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+                startActivityAndCollapse(pi);
+            } else {
+                startActivityAndCollapse(collapseIntent);
+            }
+        } catch (Exception e) {
+            // Shade collapse is best-effort
         }
     }
 
@@ -46,9 +72,10 @@ public class ScreenshotTileService extends TileService {
     private void collapseAndStart(Intent intent, int requestCode) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             // API 34+: use PendingIntent overload
+            // Use FLAG_MUTABLE so extras are delivered properly after force-stop
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     this, requestCode, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
             startActivityAndCollapse(pendingIntent);
         } else {
             // Pre-34: use deprecated Intent overload

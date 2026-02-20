@@ -31,7 +31,7 @@ public class ScreenshotRequestActivity extends AppCompatActivity {
                 // Tell the service to capture after a delay (shade needs time to collapse)
                 Intent captureIntent = new Intent(this, ScreenshotService.class);
                 captureIntent.setAction(ScreenshotService.ACTION_CAPTURE);
-                captureIntent.putExtra("delayMs", 600L);
+                captureIntent.putExtra("delayMs", 300L);
                 startService(captureIntent);
             }
             finish();
@@ -54,12 +54,14 @@ public class ScreenshotRequestActivity extends AppCompatActivity {
                         int resultCode = result.getResultCode();
                         Intent data = result.getData();
 
-                        // Small delay so the consent dialog animates away
+                        // Brief delay so the consent dialog animates away
                         new Handler(Looper.getMainLooper()).postDelayed(() -> {
                             Intent serviceIntent = new Intent(this, ScreenshotService.class);
                             serviceIntent.setAction(ScreenshotService.ACTION_INIT);
                             serviceIntent.putExtra("resultCode", resultCode);
                             serviceIntent.putExtra("data", data);
+                            // If launched from the tile (not from main activity), capture immediately after init
+                            serviceIntent.putExtra("captureAfterInit", isTileLaunch());
 
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 startForegroundService(serviceIntent);
@@ -67,7 +69,7 @@ public class ScreenshotRequestActivity extends AppCompatActivity {
                                 startService(serviceIntent);
                             }
                             finish();
-                        }, 500);
+                        }, 300);
                     } else {
                         Toast.makeText(this, "Screenshot permission denied", Toast.LENGTH_SHORT).show();
                         finish();
@@ -86,6 +88,11 @@ public class ScreenshotRequestActivity extends AppCompatActivity {
             Toast.makeText(this, "MediaProjection not available", Toast.LENGTH_SHORT).show();
             finish();
         }
+    }
+
+    /** Returns true if this activity was launched from the QS tile (not from MainActivity). */
+    private boolean isTileLaunch() {
+        return getIntent() != null && getIntent().getBooleanExtra("fromTile", false);
     }
 }
 
