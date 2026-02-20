@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -40,20 +39,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 /**
  * Persistent foreground service that keeps MediaProjection alive.
  *
  * ACTIONS:
- *   ACTION_INIT           – first launch: receives resultCode+data, sets up the projection
- *   ACTION_CAPTURE        – captures a single frame → shows preview (auto-saves in 3 s)
- *   ACTION_SAVE_TEMP      – saves a temp-file bitmap to the user's configured storage
- *   ACTION_SCROLL_CAPTURE – captures multiple frames while auto-scrolling → stitches → preview
- *   ACTION_STOP           – user explicitly stops the service
+ *   ACTION_INIT      – first launch: receives resultCode+data, sets up the projection
+ *   ACTION_CAPTURE   – captures a single frame → shows preview (auto-saves in 3 s)
+ *   ACTION_SAVE_TEMP – saves a temp-file bitmap to the user's configured storage
+ *   ACTION_STOP      – user explicitly stops the service
  */
 public class ScreenshotService extends Service {
 
@@ -64,11 +60,7 @@ public class ScreenshotService extends Service {
     public static final String ACTION_INIT = "com.example.takess.ACTION_INIT";
     public static final String ACTION_CAPTURE = "com.example.takess.ACTION_CAPTURE";
     public static final String ACTION_SAVE_TEMP = "com.example.takess.ACTION_SAVE_TEMP";
-    public static final String ACTION_SCROLL_CAPTURE = "com.example.takess.ACTION_SCROLL_CAPTURE";
     public static final String ACTION_STOP = "com.example.takess.ACTION_STOP";
-
-    private static final int SCROLL_CAPTURE_COUNT = 5;
-    private static final long SCROLL_DELAY_MS = 800;
 
     private MediaProjection mediaProjection;
     private boolean isProjectionReady = false;
@@ -112,9 +104,6 @@ public class ScreenshotService extends Service {
                 break;
             case ACTION_SAVE_TEMP:
                 handleSaveTemp(intent);
-                break;
-            case ACTION_SCROLL_CAPTURE:
-                handleScrollCapture(intent);
                 break;
             case ACTION_STOP:
                 cleanup();
@@ -200,204 +189,8 @@ public class ScreenshotService extends Service {
         saveScreenshot(bitmap);
         bitmap.recycle();
 
-        try { new File(tempPath).delete(); } catch (Exception ignored) { }
-    }
-
-    // ──────────────────────────────────────────────
-    //  ACTION_SCROLL_CAPTURE — long screenshot
-    // ──────────────────────────────────────────────
-
-    private void handleScrollCapture(Intent intent) {
-        if (!isProjectionReady || mediaProjection == null) {
-            showToast("Permission expired. Please re-enable from the app.");
-            return;
-        }
-
-        String existingTempPath = intent.getStringExtra("tempPath");
-        showToast("Scroll capture: capturing " + SCROLL_CAPTURE_COUNT + " pages…");
-
-        List<Bitmap> frames = new ArrayList<>();
-
-        if (existingTempPath != null) {
-            Bitmap first = BitmapFactory.decodeFile(existingTempPath);
-            if (first != null) frames.add(first);
-            try { new File(existingTempPath).delete(); } catch (Exception ignored) { }
-        }
-
-        int remaining = SCROLL_CAPTURE_COUNT - frames.size();
-        scrollAndCapture(frames, remaining, () -> {
-            if (frames.isEmpty()) {
-                showToast("Scroll capture failed — no frames");
-                return;
-            }
-            Bitmap stitched = stitchBitmaps(frames);
-            for (Bitmap b : frames) {
-                if (!b.isRecycled()) b.recycle();
-            }
-            if (stitched == null) {
-                showToast("Failed to stitch screenshots");
-                return;
-            }
-            String tempPath = saveBitmapToTemp(stitched);
-            stitched.recycle();
-            if (tempPath != null) {
-                launchPreview(tempPath);
-            }
-        });
-    }
-
-    private void scrollAndCapture(List<Bitmap> frames, int remaining, Runnable onDone) {
-        if (remaining <= 0) {
-            new Handler(Looper.getMainLooper()).post(onDone);
-            return;
-        }
-
-        performGlobalScroll();
-
-        new Handler(Looper.getMainLooper()).postDelayed(() ->
-            captureFrame(bitmap -> {
-                if (bitmap != null) frames.add(bitmap);
-                scrollAndCapture(frames, remaining - 1, onDone);
-            }), SCROLL_DELAY_MS);
-    }
-
-    private void performGlobalScroll() {
-        SwipeDetectorService.requestScroll();
-    }
-
-    private static final float SCROLL_OVERLAP_FRACTION = 0.15f;
-
-    private Bitmap stitchBitmaps(List<Bitmap> bitmaps) {
-        if (bitmaps.isEmpty()) return null;
-        if (bitmaps.size() == 1) return bitmaps.get(0).copy(Bitmap.Config.ARGB_8888, true);
-
-        int width = bitmaps.get(0).getWidth();
-
-        // Calculate total height using smart overlap detection
-        int totalHeight = bitmaps.get(0).getHeight();
-        int[] overlaps = new int[bitmaps.size()]; // overlap for each frame (index 0 unused)
-        for (int i = 1; i < bitmaps.size(); i++) {
-            int detectedOverlap = findOverlap(bitmaps.get(i - 1), bitmaps.get(i));
-            overlaps[i] = detectedOverlap;
-            totalHeight += bitmaps.get(i).getHeight() - detectedOverlap;
-        }
-
-        try {
-            Bitmap result = Bitmap.createBitmap(width, totalHeight, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(result);
-
-            int yOffset = 0;
-            for (int i = 0; i < bitmaps.size(); i++) {
-                Bitmap bmp = bitmaps.get(i);
-                if (i == 0) {
-                    canvas.drawBitmap(bmp, 0, 0, null);
-                    yOffset = bmp.getHeight();
-                } else {
-                    int srcTop = overlaps[i];
-                    int srcHeight = bmp.getHeight() - srcTop;
-                    if (srcHeight <= 0) continue;
-                    Bitmap cropped = Bitmap.createBitmap(bmp, 0, srcTop, bmp.getWidth(), srcHeight);
-                    canvas.drawBitmap(cropped, 0, yOffset, null);
-                    yOffset += srcHeight;
-                    cropped.recycle();
-                }
-            }
-
-            if (yOffset < totalHeight) {
-                Bitmap trimmed = Bitmap.createBitmap(result, 0, 0, width, yOffset);
-                result.recycle();
-                return trimmed;
-            }
-            return result;
-        } catch (Exception e) {
-            Log.e(TAG, "stitchBitmaps error", e);
-            return null;
-        }
-    }
-
-    /**
-     * Find the best overlap between the bottom of topBitmap and the top of bottomBitmap
-     * by comparing sampled pixel rows. Returns the number of overlapping rows in bottomBitmap.
-     * Falls back to a fixed fraction if no good match is found.
-     */
-    private int findOverlap(Bitmap topBitmap, Bitmap bottomBitmap) {
-        int fallback = (int) (topBitmap.getHeight() * SCROLL_OVERLAP_FRACTION);
-
-        try {
-            int w = Math.min(topBitmap.getWidth(), bottomBitmap.getWidth());
-            int topH = topBitmap.getHeight();
-            int bottomH = bottomBitmap.getHeight();
-
-            // Search window: check up to 40% of the frame height for overlap
-            int maxSearchRows = (int) (topH * 0.40f);
-            maxSearchRows = Math.min(maxSearchRows, bottomH);
-
-            // Sample 10 evenly-spaced columns for comparison
-            int numSamples = Math.min(10, w);
-            int[] sampleCols = new int[numSamples];
-            for (int s = 0; s < numSamples; s++) {
-                sampleCols[s] = (int) ((s + 0.5f) * w / numSamples);
-            }
-
-            // For each possible overlap amount, compare bottom rows of topBitmap
-            // with top rows of bottomBitmap
-            int bestOverlap = -1;
-            float bestScore = 0;
-
-            for (int overlap = 10; overlap < maxSearchRows; overlap++) {
-                int matchingPixels = 0;
-                int totalPixels = 0;
-
-                // Compare a few rows at this overlap level (check every 4th row for speed)
-                for (int row = 0; row < overlap; row += 4) {
-                    int topRow = topH - overlap + row;
-                    int bottomRow = row;
-
-                    if (topRow < 0 || topRow >= topH || bottomRow >= bottomH) continue;
-
-                    for (int col : sampleCols) {
-                        if (col >= w) continue;
-                        int topPixel = topBitmap.getPixel(col, topRow);
-                        int bottomPixel = bottomBitmap.getPixel(col, bottomRow);
-                        totalPixels++;
-
-                        // Compare with small tolerance (allow minor compression artifacts)
-                        if (pixelsMatch(topPixel, bottomPixel, 15)) {
-                            matchingPixels++;
-                        }
-                    }
-                }
-
-                if (totalPixels > 0) {
-                    float score = (float) matchingPixels / totalPixels;
-                    if (score > bestScore && score > 0.85f) {
-                        bestScore = score;
-                        bestOverlap = overlap;
-                    }
-                }
-            }
-
-            if (bestOverlap > 0) {
-                Log.i(TAG, "findOverlap: detected " + bestOverlap + "px overlap (score=" + bestScore + ")");
-                return bestOverlap;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "findOverlap error, using fallback", e);
-        }
-
-        Log.i(TAG, "findOverlap: using fallback " + fallback + "px");
-        return fallback;
-    }
-
-    /**
-     * Compare two ARGB pixels with a per-channel tolerance.
-     */
-    private boolean pixelsMatch(int pixel1, int pixel2, int tolerance) {
-        int r1 = (pixel1 >> 16) & 0xFF, g1 = (pixel1 >> 8) & 0xFF, b1 = pixel1 & 0xFF;
-        int r2 = (pixel2 >> 16) & 0xFF, g2 = (pixel2 >> 8) & 0xFF, b2 = pixel2 & 0xFF;
-        return Math.abs(r1 - r2) <= tolerance
-                && Math.abs(g1 - g2) <= tolerance
-                && Math.abs(b1 - b2) <= tolerance;
+        try { //noinspection ResultOfMethodCallIgnored
+            new File(tempPath).delete(); } catch (Exception ignored) { }
     }
 
     // ──────────────────────────────────────────────
@@ -408,6 +201,7 @@ public class ScreenshotService extends Service {
         void onCaptured(@Nullable Bitmap bitmap);
     }
 
+    @SuppressWarnings("deprecation")
     private void captureFrame(CaptureCallback callback) {
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics metrics = new DisplayMetrics();
@@ -473,7 +267,8 @@ public class ScreenshotService extends Service {
     private String saveBitmapToTemp(Bitmap bitmap) {
         try {
             File tempDir = new File(getCacheDir(), "screenshots");
-            if (!tempDir.exists()) tempDir.mkdirs();
+            if (!tempDir.exists()) //noinspection ResultOfMethodCallIgnored
+                tempDir.mkdirs();
             String fileName = "temp_ss_" + System.currentTimeMillis() + ".png";
             File tempFile = new File(tempDir, fileName);
 
@@ -574,7 +369,8 @@ public class ScreenshotService extends Service {
         File dir = new File(
                 android.os.Environment.getExternalStoragePublicDirectory(
                         android.os.Environment.DIRECTORY_PICTURES), "TakeSS");
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) //noinspection ResultOfMethodCallIgnored
+            dir.mkdirs();
 
         File file = new File(dir, fileName);
         try {
@@ -681,4 +477,3 @@ public class ScreenshotService extends Service {
         super.onDestroy();
     }
 }
-

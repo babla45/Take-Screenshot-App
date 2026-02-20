@@ -21,7 +21,7 @@
         android:paddingHorizontal="16dp"
         android:paddingVertical="6dp" />
 
-    <!-- Screenshot image preview (scrollable for viewing long images) -->
+    <!-- Screenshot image preview -->
     <ScrollView
         android:id="@+id/scroll_preview"
         android:layout_width="match_parent"
@@ -43,89 +43,44 @@
 
     </ScrollView>
 
-    <!-- Bottom action bar -->
+    <!-- Bottom action bar — single row: Discard, Crop, Save -->
     <LinearLayout
         android:id="@+id/bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:orientation="vertical"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="12dp"
         android:background="#99000000">
 
-        <!-- Row 1: Discard, Scroll, Save -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_discard"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingHorizontal="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp">
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="@string/discard"
+            android:textColor="#FFFFFF" />
 
-            <!-- Discard -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_discard"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                android:text="@string/discard"
-                android:textColor="#FFFFFF" />
-
-            <!-- Scroll Capture (long screenshot) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_scroll_capture"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="4dp"
-                android:text="@string/scroll_capture" />
-
-            <!-- Save -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_save"
-                style="@style/Widget.Material3.Button"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:text="@string/save" />
-
-        </LinearLayout>
-
-        <!-- Row 2: Crop, Resize -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_crop"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingHorizontal="12dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="12dp">
+            android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
+            android:text="@string/crop" />
 
-            <!-- Crop -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_crop"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                android:text="@string/crop" />
-
-            <!-- Resize -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_resize"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:text="@string/resize" />
-
-        </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_save"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="@string/save" />
 
     </LinearLayout>
 

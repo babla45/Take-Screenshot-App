@@ -31,7 +31,7 @@ public class ScreenshotRequestActivity extends AppCompatActivity {
                 // Tell the service to capture after a delay (shade needs time to collapse)
                 Intent captureIntent = new Intent(this, ScreenshotService.class);
                 captureIntent.setAction(ScreenshotService.ACTION_CAPTURE);
-                captureIntent.putExtra("delayMs", 600);
+                captureIntent.putExtra("delayMs", 600L);
                 startService(captureIntent);
             }
             finish();

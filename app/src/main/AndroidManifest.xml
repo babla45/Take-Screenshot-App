@@ -65,18 +65,6 @@
             android:foregroundServiceType="mediaProjection"
             android:exported="false" />
 
-        <!-- Accessibility Service for scroll action (long screenshots) -->
-        <service
-            android:name=".SwipeDetectorService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
 
     </application>
 
