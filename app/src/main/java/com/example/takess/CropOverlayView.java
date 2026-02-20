@@ -32,7 +32,7 @@ public class CropOverlayView extends View {
     // The actual image rect inside the view (accounting for fitCenter padding)
     private final RectF imageRect = new RectF();
 
-    private static final float HANDLE_TOUCH_RADIUS_DP = 22f;
+    private static final float HANDLE_TOUCH_RADIUS_DP = 32f;
     private static final float HANDLE_VISUAL_SIZE_DP = 16f;
     private static final float MIN_CROP_PCT = 0.05f; // minimum 5% in each dimension
 
@@ -221,7 +221,3 @@ public class CropOverlayView extends View {
         return (float) Math.sqrt(dx * dx + dy * dy);
     }
 }
-
-
-
-
