@@ -19,12 +19,12 @@
         <!-- Phone/Device outline -->
         <path
             android:pathData="M-12,-20 L12,-20 Q14,-20 14,-18 L14,20 Q14,22 12,22 L-12,22 Q-14,22 -14,20 L-14,-18 Q-14,-20 -12,-20 Z"
-            android:fillColor="#FFFFFF"/>
+            android:fillColor="#E39191"/>
 
         <!-- Phone screen area -->
         <path
             android:pathData="M-10,-15 L10,-15 L10,16 L-10,16 Z"
-            android:fillColor="#E1F5FE"/>
+            android:fillColor="#F0F0F0"/>
 
         <!-- Top speaker/notch -->
         <path
@@ -43,47 +43,47 @@
             <!-- Outer shutter ring -->
             <path
                 android:pathData="M0,0 m-8,0 a8,8 0,1 1,16 0 a8,8 0,1 1,-16 0"
-                android:strokeColor="#1565C0"
+                android:strokeColor="#30012E"
                 android:strokeWidth="2"
                 android:fillColor="#00000000"/>
 
             <!-- Inner shutter circle -->
             <path
                 android:pathData="M0,0 m-5,0 a5,5 0,1 1,10 0 a5,5 0,1 1,-10 0"
-                android:fillColor="#1565C0"/>
+                android:fillColor="#FFFFFF"/>
 
             <!-- Shutter center dot -->
             <path
                 android:pathData="M0,0 m-2,0 a2,2 0,1 1,4 0 a2,2 0,1 1,-4 0"
-                android:fillColor="#FFFFFF"/>
+                android:fillColor="#7EEB91"/>
         </group>
 
         <!-- Corner brackets (screenshot frame indicators) -->
         <!-- Top-left bracket -->
         <path
             android:pathData="M-10,-15 L-7,-15 M-10,-15 L-10,-12"
-            android:strokeColor="#00BCD4"
+            android:strokeColor="#673AB7"
             android:strokeWidth="1.5"
             android:strokeLineCap="round"/>
 
         <!-- Top-right bracket -->
         <path
             android:pathData="M10,-15 L7,-15 M10,-15 L10,-12"
-            android:strokeColor="#00BCD4"
+            android:strokeColor="#673AB7"
             android:strokeWidth="1.5"
             android:strokeLineCap="round"/>
 
         <!-- Bottom-left bracket -->
         <path
             android:pathData="M-10,16 L-7,16 M-10,16 L-10,13"
-            android:strokeColor="#00BCD4"
+            android:strokeColor="#3F51B5"
             android:strokeWidth="1.5"
             android:strokeLineCap="round"/>
 
         <!-- Bottom-right bracket -->
         <path
             android:pathData="M10,16 L7,16 M10,16 L10,13"
-            android:strokeColor="#00BCD4"
+            android:strokeColor="#673AB7"
             android:strokeWidth="1.5"
             android:strokeLineCap="round"/>
     </group>

@@ -15,8 +15,8 @@
                 android:endX="108"
                 android:endY="108"
                 android:type="linear">
-                <item android:color="#1565C0" android:offset="0.0" />
-                <item android:color="#0097A7" android:offset="1.0" />
+                <item android:color="#EFD6D5" android:offset="0.0" />
+                <item android:color="#B342034C" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
@@ -24,7 +24,7 @@
     <!-- Subtle circular overlay for depth -->
     <path
         android:pathData="M54,54m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0"
-        android:fillColor="#20FFFFFF"/>
+        android:fillColor="#20417C42"/>
 
     <path
         android:pathData="M54,54m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0"
