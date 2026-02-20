@@ -1,88 +1,132 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/preview_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#CC000000"
-    android:fitsSystemWindows="true">
+    android:background="@android:color/transparent">
 
-    <!-- Countdown timer text at top -->
-    <TextView
-        android:id="@+id/tv_countdown"
-        android:layout_width="wrap_content"
+    <!-- Small card anchored top-left -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_preview"
+        android:layout_width="220dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="12dp"
         android:layout_marginTop="48dp"
-        android:text="Auto-saving in 3s…"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:background="#66000000"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="6dp" />
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#F0202020"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Screenshot image preview -->
-    <ScrollView
-        android:id="@+id/scroll_preview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/bottom_bar"
-        android:layout_below="@id/tv_countdown"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginHorizontal="24dp"
-        android:fillViewport="false">
-
-        <ImageView
-            android:id="@+id/iv_preview"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
-            android:scaleType="fitCenter"
-            android:contentDescription="@string/preview_content_desc" />
+            android:orientation="vertical">
 
-    </ScrollView>
+            <!-- Countdown -->
+            <TextView
+                android:id="@+id/tv_countdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Auto-saving in 3s…"
+                android:textColor="#CCFFFFFF"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingVertical="6dp"
+                android:background="#40000000" />
 
-    <!-- Bottom action bar — single row: Discard, Crop, Save -->
-    <LinearLayout
-        android:id="@+id/bottom_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:padding="12dp"
-        android:background="#99000000">
+            <!-- Screenshot thumbnail — crop handles overlay on top -->
+            <FrameLayout
+                android:id="@+id/crop_container"
+                android:layout_width="match_parent"
+                android:layout_height="280dp"
+                android:background="#FF111111">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_discard"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="@string/discard"
-            android:textColor="#FFFFFF" />
+                <ImageView
+                    android:id="@+id/iv_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitCenter"
+                    android:padding="2dp"
+                    android:contentDescription="@string/preview_content_desc" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_crop"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
-            android:text="@string/crop" />
+                <!-- Crop overlay with draggable edges -->
+                <com.example.takess.CropOverlayView
+                    android:id="@+id/crop_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_save"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="@string/save" />
+            </FrameLayout>
 
-    </LinearLayout>
+            <!-- Crop info text -->
+            <TextView
+                android:id="@+id/tv_crop_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#AAFFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:paddingVertical="4dp"
+                android:visibility="gone" />
 
-</RelativeLayout>
+            <!-- Buttons row -->
+            <LinearLayout
+                android:id="@+id/bottom_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="6dp">
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_discard"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="3dp"
+                    android:text="✕"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_crop"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:text="@string/crop"
+                    android:textSize="12sp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_save"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="3dp"
+                    android:text="@string/save"
+                    android:textSize="12sp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="0dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</FrameLayout>

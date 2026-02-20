@@ -43,7 +43,7 @@
         <activity
             android:name=".ScreenshotPreviewActivity"
             android:exported="false"
-            android:theme="@style/Theme.TakeSS.Transparent"
+            android:theme="@style/Theme.TakeSS.Preview"
             android:excludeFromRecents="true"
             android:taskAffinity="" />
 
